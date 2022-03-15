@@ -1,20 +1,17 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
-using System.Drawing;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace FsAffinityTestWin
 {
-  public partial class Form1 : Form
+  public partial class FrmMain : Form
   {
-    public Form1()
+    public FrmMain()
     {
       InitializeComponent();
     }
@@ -30,10 +27,12 @@ namespace FsAffinityTestWin
 
     private CheckBox CreateCheckBox()
     {
-      CheckBox ret = new CheckBox();
-      ret.Checked = true;
-      ret.Text = "";
-      ret.Width = 16;
+      CheckBox ret = new CheckBox
+      {
+        Checked = true,
+        Text = "",
+        Width = 16
+      };
       ret.CheckedChanged += chk_CheckStateChanged;
       return ret;
     }
@@ -59,17 +58,15 @@ namespace FsAffinityTestWin
       return ret;
     }
 
-    private void btnApply_Click(object sender, EventArgs e)
+    private async void btnApply_Click(object sender, EventArgs e)
     {
       slbl.Text = "Applying";
-      slbl.Invalidate();
       btnApply.Enabled = false;
       processInfoBindingSource.DataSource = null;
 
-      int selected = CalculateAffinity(flpSelected);
-      int other = CalculateAffinity(flpOther);
-      List<ProcessInfo> pis = ApplyAffinity(txtProcessName.Text.Trim(), (IntPtr)selected, (IntPtr)other);
-      pis = pis.OrderBy(q => q.Name).ToList();
+      Task<List<ProcessInfo>> task = new Task<List<ProcessInfo>>(DoApplyAndEvaluate);
+      task.Start();
+      List<ProcessInfo> pis = await task;
 
       processInfoBindingSource.DataSource = pis;
       btnApply.Enabled = true;
@@ -77,12 +74,24 @@ namespace FsAffinityTestWin
         $"{pis.Count(q => q.IsAccessible == false)} unacessible, {pis.Count(q => q.IsSelected)} selected";
     }
 
+    private List<ProcessInfo> DoApplyAndEvaluate()
+    {
+      int selected = CalculateAffinity(flpSelected);
+      int other = CalculateAffinity(flpOther);
+      List<ProcessInfo> pis = ApplyAffinity(txtProcessName.Text.Trim(), (IntPtr)selected, (IntPtr)other);
+      pis = pis.OrderBy(q => q.Name).ToList();
+      return pis;
+    }
+
     private List<ProcessInfo> ApplyAffinity(string selectedProcess, IntPtr selectedAffinity, IntPtr otherAffinity)
     {
       List<ProcessInfo> ret = new List<ProcessInfo>();
       Process[] processes = Process.GetProcesses();
+      int cnt = processes.Length;
+      int cur = 0;
       foreach (Process process in processes.OrderBy(q => q.ProcessName))
       {
+        UpdateProgress(cur, cnt);
         ProcessInfo pi = new ProcessInfo()
         {
           Id = process.Id,
@@ -119,8 +128,28 @@ namespace FsAffinityTestWin
         {
           pi.Affinity = -1;
         }
+        cur++;
       }
+      UpdateProgress(cnt, cnt);
       return ret;
+    }
+
+    private void UpdateProgress(int current, int count)
+    {
+      if (InvokeRequired)
+      {
+        Action a = () => UpdateProgress(current, count);
+        Invoke(a);
+      }
+      else
+      {
+        if (sprg.Maximum != count)
+        {
+          sprg.Value = 0;
+          sprg.Maximum = count;
+        }
+        sprg.Value = current;
+      }
     }
   }
 }
