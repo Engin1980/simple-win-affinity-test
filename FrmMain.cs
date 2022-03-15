@@ -39,8 +39,9 @@ namespace FsAffinityTestWin
 
     private void chk_CheckStateChanged(object sender, EventArgs e)
     {
-      lblAffinitySelected.Text = CalculateAffinity(flpSelected).ToString();
-      lblAffinityOther.Text = CalculateAffinity(flpOther).ToString();
+      // only for debugging
+      //lblAffinitySelected.Text = CalculateAffinity(flpSelected).ToString();
+      //lblAffinityOther.Text = CalculateAffinity(flpOther).ToString();
     }
 
     private int CalculateAffinity(FlowLayoutPanel flp)
@@ -97,12 +98,13 @@ namespace FsAffinityTestWin
           Id = process.Id,
           Name = process.ProcessName,
           WindowTitle = process.MainWindowTitle,
-          IsSelected = false
+          IsSelected = false,
+          ThreadCount = process.Threads.Count
         };
         ret.Add(pi);
 
         IntPtr trgAffinity;
-        if (process.ProcessName == selectedProcess)
+        if (System.Text.RegularExpressions.Regex.IsMatch(process.ProcessName, selectedProcess))
         {
           trgAffinity = selectedAffinity;
           pi.IsSelected = true;
@@ -126,7 +128,7 @@ namespace FsAffinityTestWin
         }
         catch (Exception)
         {
-          pi.Affinity = -1;
+          pi.Affinity = null;
         }
         cur++;
       }
