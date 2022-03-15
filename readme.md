@@ -6,6 +6,9 @@ This app sets the affinity for all the accessable processes in the Win OS. The s
 ## Motivation
 This app was created to check if a reservation of specific cores for FS2020 can increase its performance. Short answer: no.
 
+## Installation
+Download the ZIP from the Release page and unzip it. Run the .exe file. The .NET framework is required.
+
 ## Usage
 Run the application. It is suggested to run the app in the administrator mode, otherwise many running processes will not be accessible for the app.
 Then:
